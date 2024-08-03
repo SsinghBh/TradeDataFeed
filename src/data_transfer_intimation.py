@@ -1,12 +1,9 @@
 import asyncio
 import logging
 import json
-from dotenv import load_dotenv
 import os
 import aiohttp
 import logging
-
-load_dotenv()
 
 logger = logging.getLogger(__name__)
 
