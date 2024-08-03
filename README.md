@@ -17,7 +17,7 @@
 
 - **Python 3.7+**
 - **Docker** and **Docker Compose** (for running with Docker)
-- **Upstox Account and API Keys** (or other supported brokers)
+- **Upstox Account and access token** (or other supported brokers)
 
 ## Installation
 
