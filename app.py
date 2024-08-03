@@ -2,9 +2,16 @@ import asyncio
 import logging
 import logging.handlers
 from src.websocket_client import fetch_market_data
+from dotenv import load_dotenv
+import os
 from src.db_ingestion import push_data_to_db, setup_database
 from src.backed_up_data import push_failed_data
 from src.data_transfer_intimation import monitor_data_transfer
+
+load_dotenv()  # This will load variables from a .env file into the environment
+
+MAX_QUEUE_SIZE = os.getenv("MAX_QUEUE_SIZE", 10_000)
+DATA_FEED_UPDATE_URL = os.getenv("DATA_FEED_UPDATE_URL", None)
 
 # Configure logging
 log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -27,18 +34,23 @@ async def main():
     await setup_database()
 
     # Initialize async queue for data storage
-    q = asyncio.Queue(maxsize=1000)
+    q = asyncio.Queue(maxsize=MAX_QUEUE_SIZE)
 
     # Initialize the shared success event
     success_event = asyncio.Event()
 
     # Create tasks
-    t1 = asyncio.create_task(fetch_market_data(q=q))
-    t2 = asyncio.create_task(push_data_to_db(data_queue=q, success_event=success_event))
-    t3 = asyncio.create_task(push_failed_data(success_event=success_event))
-    t4 = asyncio.create_task(monitor_data_transfer(success_event=success_event))
+    tasks = [
+        asyncio.create_task(fetch_market_data(q=q)),
+        asyncio.create_task(push_data_to_db(data_queue=q, success_event=success_event)),
+        asyncio.create_task(push_failed_data(success_event=success_event))
+    ]
 
-    await asyncio.gather(t1, t2, t3, t4)
+    # Conditionally add the monitor_data_transfer task
+    if DATA_FEED_UPDATE_URL:
+        tasks.append(asyncio.create_task(monitor_data_transfer(success_event=success_event)))
+
+    await asyncio.gather(*tasks)
 
 if __name__ == "__main__":
     asyncio.run(main())
