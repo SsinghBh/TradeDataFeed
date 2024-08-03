@@ -1,17 +1,14 @@
 import asyncio
 import logging
 import logging.handlers
-from src.websocket_client import fetch_market_data
 from dotenv import load_dotenv
 import os
-from src.db_ingestion import push_data_to_db, setup_database
-from src.backed_up_data import push_failed_data
-from src.data_transfer_intimation import monitor_data_transfer
 
 load_dotenv()  # This will load variables from a .env file into the environment
 
 MAX_QUEUE_SIZE = os.getenv("MAX_QUEUE_SIZE", 10_000)
 DATA_FEED_UPDATE_URL = os.getenv("DATA_FEED_UPDATE_URL", None)
+print("url", DATA_FEED_UPDATE_URL)
 
 # Configure logging
 log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -30,6 +27,12 @@ logger.addHandler(file_handler)
 logger.addHandler(stream_handler)
 
 async def main():
+    # Import async coroutines
+    from src.websocket_client import fetch_market_data
+    from src.db_ingestion import push_data_to_db, setup_database
+    from src.backed_up_data import push_failed_data
+    from src.data_transfer_intimation import monitor_data_transfer
+
     # Setup database
     await setup_database()
 

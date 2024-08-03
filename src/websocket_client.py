@@ -1,23 +1,21 @@
 # Import necessary modules
 import asyncio
 import json
-import aiohttp
 import ssl
 import upstox_client
 import websockets
 from google.protobuf.json_format import MessageToDict
 import src.MarketDataFeed_pb2 as pb
 import json
-from aiohttp.client_exceptions import ClientConnectorError
+import os
 from access_token_util import fetch_token
 import requests
 
 
-with open("config.json", "r") as f:
-    config = json.load(f)
-
 MAX_WEBSOCKET_CONN_RETRIES = 3
-FETCH_TOKEN_API = config["api_fetch_token"]
+FETCH_TOKEN_API = os.getenv("API_FETCH_TOKEN", None)
+GET_INSTRUMENTS_URL = os.getenv("GET_INSTRUMENTS_URL", None)
+INSTRUMENTS_LIST = [i.strip() for i in os.getenv("INSTRUMENTS_LIST", "").split(",")]
 
 def get_market_data_feed_authorize(api_version, configuration):
     """Get authorization for market data feed."""
@@ -34,13 +32,19 @@ def decode_protobuf(buffer):
     return feed_response
 
 def get_instruments():
-    url = config["instrument_keys_list"]
-    data = requests.get(url)
-    instruments_list = data.json()["instruments"]
+    url = GET_INSTRUMENTS_URL
+    if url:
+        data = requests.get(url)
+        instruments_list = data.json()["instruments"]
 
-    print(instruments_list)
+        print(instruments_list)
 
-    return instruments_list
+        return instruments_list
+    
+    elif INSTRUMENTS_LIST:
+        return INSTRUMENTS_LIST
+    
+    raise Exception(f"Cannot fetch instruments list. Terminating app...")
 
 async def fetch_market_data(q: asyncio.Queue):
     """Fetch market data using WebSocket and print it."""

@@ -5,7 +5,7 @@ import aiosqlite
 import os
 from itertools import count
 from typing import List, Dict
-import data_push  # InfluxDB utility
+from . import data_push  # InfluxDB utility
 import logging
 
 logger = logging.getLogger(__name__)
@@ -20,6 +20,7 @@ MAX_DOCS_LIMIT = 100_000_000
 LAST_PUSH_TIME_THRESHOLD = timedelta(seconds=30)
 
 if (INFLUX_BUCKET_NAME is None) or (INFLUX_DB_ORG is None) or (INFLUX_DB_URL is None) or (INFLUX_DB_TOKEN is None):
+    print(f"bucket : {INFLUX_BUCKET_NAME} :: org : {INFLUX_DB_ORG} :: URL : {INFLUX_DB_URL} :: token : {INFLUX_DB_TOKEN}")
     raise Exception(f"Incomplete influxDB credentials. Terminating process...")
 
 async def setup_database(db_path: str = DB_LOCATION):

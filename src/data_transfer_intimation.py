@@ -7,8 +7,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-SLEEP_TIME = os.getenv("NOTIFICATION_SLEEP_TIME", 60)
-WAIT_TIME = os.getenv("NOTIFICATION_WAIT_TIME", 50)
+SLEEP_TIME = int(os.getenv("NOTIFICATION_SLEEP_TIME", 60))
+WAIT_TIME = int(os.getenv("NOTIFICATION_WAIT_TIME", 50))
 DATA_FEED_UPDATE_URL = os.getenv("DATA_FEED_UPDATE_URL", None)
 
 async def send_data_feed_update_notification():
