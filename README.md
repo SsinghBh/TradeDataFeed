@@ -1,8 +1,17 @@
 # TradeDataFeed
 
-## Overview
+**TradeDataFeed** is a specialized service designed to interface with the Upstox broker, enabling real-time trading data acquisition via websocket. This project incorporates example scripts provided by Upstox, which are available on their [GitHub](#https://github.com/upstox/upstox-python/tree/master/examples/websocket) and [official documentation](#https://upstox.com/developer/api-documentation/get-market-data-feed). These examples serve as the foundation for establishing the connection and retrieving market data.
 
-**TradeDataFeed** is a service that receives real-time trading data via websocket from brokers and stores it in InfluxDB. The service is designed for algorithmic trading applications, ensuring data integrity and fault tolerance.
+## Key Features
+
+- **Upstox Broker Integration**: The current implementation is exclusively tailored for the Upstox platform. It leverages Upstox's API and websocket capabilities to fetch live market data efficiently.
+
+- **Adaptation and Enhancement**: Building on the basic examples from Upstox, this project extends the functionality to create a robust data pipeline. Key enhancements include:
+  - **Data Ingestion and Storage**: The data fetched from the websocket is processed and stored in InfluxDB, a time-series database suitable for high-performance data analytics.
+  - **Error Handling and Resilience**: The code includes mechanisms to handle potential issues such as network failures or data inconsistencies, ensuring data integrity and reliability.
+
+- **Dockerized Deployment**: To facilitate ease of deployment and scalability, the entire application is containerized using Docker. This setup allows for consistent environments across development and production, simplifying the deployment process.
+
 
 ## Table of Contents
 
@@ -84,3 +93,9 @@ Example .env file:
 + DATA_FEED_UPDATE_INFORM_URL: The URL endpoint to inform about data feed updates.
 
 You can configure these settings either directly in the config.py file or through environment variables.
+
+## Additional Notes
+
+- **Source Code Attribution**: Several components of the initial setup and data handling are based directly on the example scripts from Upstox's resources. These scripts have been integrated with modifications to fit the broader architecture and requirements of this project.
+
+- **Potential for Future Extensions**: While the current implementation is focused on Upstox, the system's modular design allows for potential expansion to support other brokers. Such expansions would require additional development to accommodate different API structures and data formats.

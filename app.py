@@ -8,7 +8,6 @@ load_dotenv()  # This will load variables from a .env file into the environment
 
 MAX_QUEUE_SIZE = os.getenv("MAX_QUEUE_SIZE", 10_000)
 DATA_FEED_UPDATE_URL = os.getenv("DATA_FEED_UPDATE_URL", None)
-print("url", DATA_FEED_UPDATE_URL)
 
 # Configure logging
 log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -49,7 +48,7 @@ async def main():
         asyncio.create_task(push_failed_data(success_event=success_event))
     ]
 
-    # Conditionally add the monitor_data_transfer task
+    # Conditionally add the monitor_data_transfer task to send data update notification
     if DATA_FEED_UPDATE_URL:
         tasks.append(asyncio.create_task(monitor_data_transfer(success_event=success_event)))
 
