@@ -8,7 +8,7 @@ from google.protobuf.json_format import MessageToDict
 import src.MarketDataFeed_pb2 as pb
 import json
 import os
-from access_token_util import fetch_token
+from .access_token_util import fetch_token
 import requests
 
 

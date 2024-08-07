@@ -37,37 +37,52 @@ git clone https://github.com/SsinghBh/TradeDataFeed.git
 cd TradeDataFeed
 ```
 
-# Install Dependencies
-If running locally without Docker:
-
-```bash
-pip install -r requirements.txt
-```
 
 # Running the Project
-## Option A: Data Feed Service Only
+This section provides instructions for running the **trade_data_feed** service, either as a standalone Python application, inside a Docker container, or using Docker Compose.
+## Option A: Running as a Standalone Python Application
 In this setup, it is assumed that you have an existing InfluxDB instance. You need to configure the service to connect to your InfluxDB database.
 
-1. Edit the Configuration: Modify the config.py file to include your InfluxDB connection details.
+1. **Setup the Environment**:
+   - Clone the repository and navigate to the project directory.
+   - Create a `.env` file in the root directory with the required environment variables. Example:
 
-2. Run the Service: Start the data feed service.
+     ```plaintext
+     INFLUXDB_URL=http://localhost:8086
+     INFLUXDB_TOKEN=your_influxdb_token
+     ACCESS_TOKEN_URL=http://localhost:5000/get_token
+     INSTRUMENTS_LIST_URL=http://localhost:5000/get_instruments_list
+     ```
 
-```bash
-python src/main.py
-```
-## Option B: Data Feed Service with InfluxDB
-This setup initializes both the data feed service and an InfluxDB container. Docker Compose is used to manage the containers.
+2. **Install Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. **Run the application**:
+    ```bash
+    python app.py
+    ```
 
-1. Set Up Environment Variables: You can either create a .env file or pass environment variables at runtime.
+## Option B: Running Inside a Docker Container
+There are two main scenarios for running the **trade_data_feed** service inside Docker:
+
+**Scenario A: Using Docker Compose**
+
+Here, it is assumed that there is no influxDB instance already present and docker-compose file will build and run both, the influxDB instance and trade_data_feed application.
+
+1. Set Up Environment Variables: You can either create a .env file or pass environment variables at runtime.  
 Example .env file:
     ```text
-    INFLUXDB_BUCKET_NAME=stock_data
-    INFLUXDB_ORG=my-org
-    INFLUXDB_URL=http://localhost:8086
-    API_FETCH_TOKEN_URL=your-api-fetch-token-url
-    INSTRUMENT_KEYS_LIST_URL=your-instruments-list-url
-    DATA_FEED_UPDATE_INFORM_URL=your-data-feed-update-notification-url
+    API_FETCH_TOKEN=your-api-fetch-token-url
+    # Either GET_INSTRUMENTS_URL or INSTRUMENTS_LIST is required, not both
+    GET_INSTRUMENTS_URL=your-instruments-list-url
+    INSTRUMENTS_LIST=<instrument1>, <instrument2>,...
+    DATA_FEED_UPDATE_URL=your-data-feed-update-notification-url
+    NOTIFICATION_SLEEP_TIME=60
+    NOTIFICATION_WAIT_TIME=50
     ```
+    These can also be specified in the docker-compose file has well.
+
 2. Run Docker Compose: This will build and start the containers.
     ```bash
     docker-compose up --build
@@ -83,16 +98,44 @@ Example .env file:
            -p 5000:5000 yourusername/data-feed-service
     ```
 
+**Scenario B: Using Dockerfile to run trade_data_feed**  
+In order to run only the trade_data_feed application inside a docker container, an influxDB instance should already be present.
+
+1. Set Up Environment Variables: You can either create a .env file or pass environment variables at runtime. All the environment variables that specify configuration for the **trade_data_feed** application as well as connection to influxDB instance should be specified.  
+Example .env file:
+    ```text
+    API_FETCH_TOKEN=your-api-fetch-token-url
+    # Either GET_INSTRUMENTS_URL or INSTRUMENTS_LIST is required, not both
+    GET_INSTRUMENTS_URL=your-instruments-list-url
+    INSTRUMENTS_LIST=<instrument1>, <instrument2>,...
+    DATA_FEED_UPDATE_URL=your-data-feed-update-notification-url
+    NOTIFICATION_SLEEP_TIME=60
+    NOTIFICATION_WAIT_TIME=50
+
+    # InfluxDB creds
+    INFLUX_BUCKET_NAME=influxdb-bucket-name
+    INFLUX_DB_ORG=influxdb-org
+    INFLUX_DB_URL=influxdb-url
+    INFLUX_DB_TOKEN=your-influxdb-token
+    ```
+    These can also be specified in the arguments while running the container. In case the **trade_data_feed** application has to communicate with another application running inside docker container on the same host, they have to be on the same docker network in order to communicate and use container Id instead of `localhost` for specifying URL. In case the app has to communicate with another application (like access token or notification URL) running on host without docker container, use `host.docker.internal` instead of `localhost`.
+2. Run the Dockerfile to build the image
+    ```bash
+    docker build . -t trade_data_feed
+    ```
+3. Run the container
+    ```bash
+    docker run -p 5000:5000 trade_data_feed
+    ```
+
 # Configuration
-**Configuration File (config.py)**  
+**Configuration File (.env)**  
 + INFLUXDB_BUCKET_NAME: The name of the InfluxDB bucket to store data.
 + INFLUXDB_ORG: The InfluxDB organization name.
 + INFLUXDB_URL: The URL of the InfluxDB instance.
 + API_FETCH_TOKEN_URL: The URL endpoint to fetch the API token.
 + INSTRUMENT_KEYS_LIST_URL: The URL endpoint to get the list of instrument keys.
 + DATA_FEED_UPDATE_INFORM_URL: The URL endpoint to inform about data feed updates.
-
-You can configure these settings either directly in the config.py file or through environment variables.
 
 ## Additional Notes
 
