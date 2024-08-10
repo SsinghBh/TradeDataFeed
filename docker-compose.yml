@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  data-feed-service:
+    build: .
+    ports:
+      - 8000:8000  # Example port mapping, adjust as needed
+    environment:
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_ORG=your_org_name
+      - INFLUXDB_BUCKET_NAME=your_bucket_name
+      - INFLUXDB_TOKEN=your_influxdb_token
+      - DATA_FEED_UPDATE_URL=your_data_feed_update_url
+      - MAX_QUEUE_SIZE=10000
+      - ACCESS_TOKEN_URL=your_access_token_url_or_empty_if_not_used
+      - INSTRUMENTS_LIST_URL=your_instruments_list_url_or_empty_if_not_used
+    depends_on:
+      - influxdb
+
+  influxdb:
+    image: influxdb:latest
+    ports:
+      - 8086:8086
+    environment:
+      - INFLUXDB_DB=your_database_name
+      - INFLUXDB_ADMIN_USER=admin
+      - INFLUXDB_ADMIN_PASSWORD=admin_password
+      - INFLUXDB_HTTP_AUTH_ENABLED=true
+    volumes:
+      - influxdb_data:/var/lib/influxdb
+
+volumes:
+  influxdb_data:
