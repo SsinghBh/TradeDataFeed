@@ -17,10 +17,14 @@
 
 1. [Prerequisites](#prerequisites)
 2. [Installation](#installation)
+   - [Clone the Repository](#clone-the-repository)
 3. [Running the Project](#running-the-project)
-   - [Option A: Data Feed Service Only](#option-a-data-feed-service-only)
-   - [Option B: Data Feed Service with InfluxDB](#option-b-data-feed-service-with-influxdb)
+   - [Option A: Running as a Standalone Python Application](#option-a-running-as-a-standalone-python-application)
+   - [Option B: Running Inside a Docker Container](#option-b-running-inside-a-docker-container)
+     - [Scenario A: Using Docker Compose](#scenario-a-using-docker-compose)
+     - [Scenario B: Using Dockerfile to run trade_data_feed](#scenario-b-using-dockerfile-to-run-trade_data_feed)
 4. [Configuration](#configuration)
+5. [Additional Notes](#additional-notes)
 
 ## Prerequisites
 
