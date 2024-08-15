@@ -9,6 +9,10 @@ load_dotenv()  # This will load variables from a .env file into the environment
 MAX_QUEUE_SIZE = os.getenv("MAX_QUEUE_SIZE", 10_000)
 DATA_FEED_UPDATE_URL = os.getenv("DATA_FEED_UPDATE_URL", None)
 
+# Ensure the logs directory exists
+if not os.path.exists('logs'):
+    os.makedirs('logs')
+    
 # Configure logging
 log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
