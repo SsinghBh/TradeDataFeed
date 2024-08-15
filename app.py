@@ -12,7 +12,7 @@ DATA_FEED_UPDATE_URL = os.getenv("DATA_FEED_UPDATE_URL", None)
 # Ensure the logs directory exists
 if not os.path.exists('logs'):
     os.makedirs('logs')
-    
+
 # Configure logging
 log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -35,6 +35,10 @@ async def main():
     from src.db_ingestion import push_data_to_db, setup_database
     from src.backed_up_data import push_failed_data
     from src.data_transfer_intimation import monitor_data_transfer
+
+    # Ensure the sqlite db directory exists
+    if not os.path.exists('sqlite_db'):
+        os.makedirs('sqlite_db')
 
     # Setup database
     await setup_database()
