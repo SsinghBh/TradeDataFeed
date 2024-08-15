@@ -1,6 +1,6 @@
 # TradeDataFeed
 
-**TradeDataFeed** is a specialized service designed to interface with the Upstox broker, enabling real-time trading data acquisition via websocket. This project incorporates example scripts provided by Upstox, which are available on their [GitHub](#https://github.com/upstox/upstox-python/tree/master/examples/websocket) and [official documentation](#https://upstox.com/developer/api-documentation/get-market-data-feed). These examples serve as the foundation for establishing the connection and retrieving market data.
+**TradeDataFeed** is a specialized service designed to interface with the Upstox broker, enabling real-time trading data acquisition via websocket. This project incorporates example scripts provided by Upstox, which are available on their [GitHub](https://github.com/upstox/upstox-python/tree/master/examples/websocket) and [official documentation](https://upstox.com/developer/api-documentation/get-market-data-feed). These examples serve as the foundation for establishing the connection and retrieving market data.
 
 ## Key Features
 
@@ -51,12 +51,23 @@ In this setup, it is assumed that you have an existing InfluxDB instance. You ne
    - Clone the repository and navigate to the project directory.
    - Create a `.env` file in the root directory with the required environment variables. Example:
 
-     ```plaintext
-     INFLUXDB_URL=http://localhost:8086
-     INFLUXDB_TOKEN=your_influxdb_token
-     ACCESS_TOKEN_URL=http://localhost:5000/get_token
-     INSTRUMENTS_LIST_URL=http://localhost:5000/get_instruments_list
-     ```
+        ```text
+        # Either specify API_FETCH_TOKEN or ACCESS_TOKEN, not both 
+        API_FETCH_TOKEN=your-api-fetch-token-url
+        ACCESS_TOKEN=your-access-token
+        # Either GET_INSTRUMENTS_URL or INSTRUMENTS_LIST is required, not both
+        GET_INSTRUMENTS_URL=your-instruments-list-url
+        INSTRUMENTS_LIST=<instrument1>, <instrument2>,...
+        DATA_FEED_UPDATE_URL=your-data-feed-update-notification-url
+        NOTIFICATION_SLEEP_TIME=60
+        NOTIFICATION_WAIT_TIME=50
+
+        # InfluxDB creds
+        INFLUX_BUCKET_NAME=influxdb-bucket-name
+        INFLUX_DB_ORG=influxdb-org
+        INFLUX_DB_URL=influxdb-url
+        INFLUX_DB_TOKEN=your-influxdb-token
+        ```
 
 2. **Install Dependencies**:
    ```bash
@@ -99,39 +110,41 @@ Example .env file:
            -e API_FETCH_TOKEN_URL=your-api-fetch-token-url \
            -e INSTRUMENT_KEYS_LIST_URL=your-instruments-list-url \
            -e DATA_FEED_UPDATE_INFORM_URL=your-data-feed-update-notification-url \
-           -p 5000:5000 yourusername/data-feed-service
+           yourusername/data-feed-service
     ```
 
 **Scenario B: Using Dockerfile to run trade_data_feed**  
 In order to run only the trade_data_feed application inside a docker container, an influxDB instance should already be present.
 
-1. Set Up Environment Variables: You can either create a .env file or pass environment variables at runtime. All the environment variables that specify configuration for the **trade_data_feed** application as well as connection to influxDB instance should be specified.  
+1. 
+    - Clone the repository and navigate to the project directory.
+    - Set Up Environment Variables: You can either create a .env file or pass environment variables at runtime. All the environment variables that specify configuration for the **trade_data_feed** application as well as connection to influxDB instance should be specified.  
 Example .env file:
-    ```text
-    # Either specify API_FETCH_TOKEN or ACCESS_TOKEN, not both 
-    API_FETCH_TOKEN=your-api-fetch-token-url
-    ACCESS_TOKEN=your-access-token
-    # Either GET_INSTRUMENTS_URL or INSTRUMENTS_LIST is required, not both
-    GET_INSTRUMENTS_URL=your-instruments-list-url
-    INSTRUMENTS_LIST=<instrument1>, <instrument2>,...
-    DATA_FEED_UPDATE_URL=your-data-feed-update-notification-url
-    NOTIFICATION_SLEEP_TIME=60
-    NOTIFICATION_WAIT_TIME=50
+        ```text
+        # Either specify API_FETCH_TOKEN or ACCESS_TOKEN, not both 
+        API_FETCH_TOKEN=your-api-fetch-token-url
+        ACCESS_TOKEN=your-access-token
+        # Either GET_INSTRUMENTS_URL or INSTRUMENTS_LIST is required, not both
+        GET_INSTRUMENTS_URL=your-instruments-list-url
+        INSTRUMENTS_LIST=<instrument1>, <instrument2>,...
+        DATA_FEED_UPDATE_URL=your-data-feed-update-notification-url
+        NOTIFICATION_SLEEP_TIME=60
+        NOTIFICATION_WAIT_TIME=50
 
-    # InfluxDB creds
-    INFLUX_BUCKET_NAME=influxdb-bucket-name
-    INFLUX_DB_ORG=influxdb-org
-    INFLUX_DB_URL=influxdb-url
-    INFLUX_DB_TOKEN=your-influxdb-token
-    ```
-    These can also be specified in the arguments while running the container. In case the **trade_data_feed** application has to communicate with another application running inside docker container on the same host, they have to be on the same docker network in order to communicate and use container Id instead of `localhost` for specifying URL. In case the app has to communicate with another application (like access token or notification URL) running on host without docker container, use `host.docker.internal` instead of `localhost`.
+        # InfluxDB creds
+        INFLUX_BUCKET_NAME=influxdb-bucket-name
+        INFLUX_DB_ORG=influxdb-org
+        INFLUX_DB_URL=influxdb-url
+        INFLUX_DB_TOKEN=your-influxdb-token
+        ```
+        These can also be specified in the arguments while running the container. In case the **trade_data_feed** application has to communicate with another application running inside docker container on the same host, they have to be on the same docker network in order to communicate and use container Id instead of `localhost` for specifying URL. In case the app has to communicate with another application (like access token or notification URL) running on host without docker container, use `host.docker.internal` instead of `localhost`.
 2. Run the Dockerfile to build the image
     ```bash
     docker build . -t trade_data_feed
     ```
 3. Run the container
     ```bash
-    docker run -p 5000:5000 trade_data_feed
+    docker run -d trade_data_feed
     ```
 
 # Configuration
@@ -139,9 +152,17 @@ Example .env file:
 + INFLUXDB_BUCKET_NAME: The name of the InfluxDB bucket to store data.
 + INFLUXDB_ORG: The InfluxDB organization name.
 + INFLUXDB_URL: The URL of the InfluxDB instance.
-+ API_FETCH_TOKEN_URL: The URL endpoint to fetch the API token.
-+ INSTRUMENT_KEYS_LIST_URL: The URL endpoint to get the list of instrument keys.
-+ DATA_FEED_UPDATE_INFORM_URL: The URL endpoint to inform about data feed updates.
++ INFLUX_DB_TOKEN: InfluxDB access token to communicate.
++ API_FETCH_TOKEN: The GET url endpoint to fetch the API token. The response should be in the following format:
+    ```json
+    {"access_token" : access_token}
+    ```
++ ACCESS_TOKEN: access token which is obtained after authentication with upston. Refer to [this](https://upstox.com/developer/api-documentation/authentication). It is reset everyday at 3 'o clock at night so, a new container has to be run everyday if this argument is passed. For automation, use `API_FETCH_TOKEN` which can make this process of fetching access token dynamic and some other application (authentication service) can daily fetch the access token. Either provide this or `API_FETCH_TOKEN`, not both.
++ GET_INSTRUMENTS_URL: The URL endpoint to get the list of instrument keys.
++ INSTRUMENTS_LIST: Comma separated list of instruments (instrument_key or instrument_token).
++ DATA_FEED_UPDATE_INFORM_URL: The POST url endpoint to inform about data feed updates.
++ NOTIFICATION_SLEEP_TIME: Duration in seconds after which notification is sent to notification endpoint given the data has arrived and pushed to DB. Default to 60.
++ NOTIFICATION_WAIT_TIME: In case of failure to push data to DB (DB not online or network error), a retry logic of this duration is implemented to push data to DB. Default to 50.
 
 ## Additional Notes
 
