@@ -54,17 +54,17 @@ def get_instruments():
     - If a URL is provided via the GET_INSTRUMENTS_URL variable, the function sends an HTTP GET request to retrieve the instruments list.
     - If the URL is not provided, it returns the predefined list from the INSTRUMENTS_LIST variable.
     """
-    url = GET_INSTRUMENTS_URL
-    if url:
-        data = requests.get(url)
+    
+    if INSTRUMENTS_LIST is not None:
+        return INSTRUMENTS_LIST
+
+    elif GET_INSTRUMENTS_URL is not None:
+        data = requests.get(GET_INSTRUMENTS_URL)
         instruments_list = data.json()["instruments"]
 
         print(instruments_list)
 
         return instruments_list
-    
-    elif INSTRUMENTS_LIST:
-        return INSTRUMENTS_LIST
     
     raise Exception(f"Cannot fetch instruments list. Terminating app...")
 
@@ -107,10 +107,10 @@ async def fetch_market_data(q: asyncio.Queue):
     while True:
         try:
             # Access token
-            if FETCH_TOKEN_API is not None:
-                configuration.access_token = await fetch_token(url=FETCH_TOKEN_API)
-            elif ACCESS_TOKEN is not None:
+            if ACCESS_TOKEN is not None:
                 configuration.access_token = ACCESS_TOKEN
+            elif FETCH_TOKEN_API is not None:
+                configuration.access_token = await fetch_token(url=FETCH_TOKEN_API)
             else:
                 raise Exception(f"Neither access token nor url to fetch is provided. Terminating...")
 

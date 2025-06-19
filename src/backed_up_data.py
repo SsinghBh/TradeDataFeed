@@ -67,7 +67,7 @@ async def push_failed_data(success_event: asyncio.Event, url: str = INFLUX_DB_UR
                 # Release space
                 await vacuum_database()
         else:
-            logger.warning("InfluxDB is offline. Retrying after interval.")
+            logger.warning(f"InfluxDB is offline. Retrying after interval. url : {url}")
         
         # Wait before the next iteration
         await asyncio.sleep(WAITING_TIME_THRESHOLD)
