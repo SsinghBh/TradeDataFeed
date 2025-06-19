@@ -6,7 +6,7 @@ import os
 
 load_dotenv()  # This will load variables from a .env file into the environment
 
-MAX_QUEUE_SIZE = os.getenv("MAX_QUEUE_SIZE", 10_000)
+MAX_QUEUE_SIZE = int(os.getenv("MAX_QUEUE_SIZE", 10_000))
 DATA_FEED_UPDATE_URL = os.getenv("DATA_FEED_UPDATE_URL", None)
 
 # Ensure the logs directory exists

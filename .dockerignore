@@ -1,0 +1,4 @@
+__pycache__/
+logs/
+sqlite_db/
+data_feed_update_mock/

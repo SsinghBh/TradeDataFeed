@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  data-feed-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8000:8000  # Example port mapping, adjust as needed
+    environment:
+      - INFLUX_DB_URL=http://influxdb_dev:8086
+      - INFLUX_DB_ORG=my_org
+      - INFLUX_BUCKET_NAME=my_defualt_bucket
+      - INFLUX_DB_TOKEN=my_token
+      - DATA_FEED_UPDATE_URL=http://data_feed_mock:5005
+      - MAX_QUEUE_SIZE=10000
+      - INSTRUMENTS_LIST=NSE_EQ|INE531E01026 , NSE_EQ|INE047A01021, NSE_EQ|INE844O01030
+      - NOTIFICATION_SLEEP_TIME=60
+      - NOTIFICATION_WAIT_TIME=50
+    depends_on:
+      - influxdb_dev
+      - data_feed_mock
+
+  data_feed_mock:
+    build: 
+      context: ./data_feed_update_mock/
+      dockerfile: Dockerfile
+
+  influxdb_dev:
+    image: influxdb:latest
+    ports:
+      - 8086:8086
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=my_user
+      - DOCKER_INFLUXDB_INIT_PASSWORD=my_password
+      - DOCKER_INFLUXDB_INIT_ORG=my_org
+      - DOCKER_INFLUXDB_INIT_BUCKET=my_defualt_bucket
+      - DOCKER_INFLUXDB_INIT_RETENTION=0
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my_token
+    volumes:
+      - influxdb_data_trade_data_feed_dev:/var/lib/influxdb
+
+volumes:
+  influxdb_data_trade_data_feed_dev:
+    driver: local
+    name: influxdb_data_trade_data_feed_dev
