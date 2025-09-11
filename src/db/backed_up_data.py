@@ -2,9 +2,8 @@ import aiosqlite
 import asyncio
 from datetime import datetime
 import logging
-from . import data_push
-from .utils import is_influxdb_online
-from .db_ingestion import transform_data, create_influx_query
+from .data_push import push_data_to_influxdb
+from utils import is_influxdb_online
 from .db_ingestion import INFLUX_BUCKET_NAME, INFLUX_DB_ORG, INFLUX_DB_TOKEN, INFLUX_DB_URL, DB_LOCATION
 
 WAITING_TIME_THRESHOLD = 10
@@ -45,7 +44,7 @@ async def push_failed_data(success_event: asyncio.Event, url: str = INFLUX_DB_UR
                 for doc_id, query in docs:
                     try:
                         logger.info(f"Waiting for data push")
-                        await data_push.push_data_to_influxdb(
+                        await push_data_to_influxdb(
                             influx_query=query,
                             influxdb_url=url,
                             org=org,

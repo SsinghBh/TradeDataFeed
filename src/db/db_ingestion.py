@@ -3,9 +3,15 @@ import pandas as pd
 from datetime import datetime, timedelta
 import aiosqlite
 import os
-from itertools import count
-from typing import List, Dict
-from . import data_push  # InfluxDB utility
+
+# Importing from v3
+# from . import data_push  # InfluxDB utility
+from .data_push import (
+    create_influx_query, 
+    push_data_to_influxdb, 
+    transform_data
+)
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -71,54 +77,6 @@ async def save_to_db(data: str, db_path: str = DB_LOCATION, max_docs_limit: int 
 
         logger.debug(f"Successfully saved data to {db_path}. Current row count: {existing_docs_count + 1}.")
         return None
-
-
-async def create_influx_query(df: pd.DataFrame) -> List[str]:
-    """
-    Creates InfluxDB line protocol queries from a pandas DataFrame for data ingestion.
-
-    Parameters:
-    - df: pd.DataFrame: The DataFrame containing data to be converted into InfluxDB line protocol.
-                       Expected to have columns: 'feed_name', 'interval', 'Open', 'High', 'Low', 'Close', 'Volume'.
-    - bucket_name: str: The name of the InfluxDB bucket where the data will be written.
-
-    Returns:
-    - List[str]: A list of strings, each representing a line protocol query for InfluxDB.
-    """
-    queries = []
-    for _, row in df.iterrows():
-        measurement = row['interval']
-        tags = f"feed_name={row['feed_name']}"
-        fields = f"Open={row['Open']},High={row['High']},Low={row['Low']},Close={row['Close']},Volume={row['Volume']}"
-        timestamp = row["ts"]
-
-        query = f"{measurement},{tags} {fields} {timestamp}"
-        queries.append(query)
-
-    return "\n".join(queries)
-
-
-async def transform_data(data_list: list) -> pd.DataFrame:
-    """
-    Transforms the given data into a pandas DataFrame.
-    """
-    rows = []
-    for data in data_list:
-        for feed_name, feed_data in data['feeds'].items():
-            for interval_data in feed_data['ff']['marketFF']['marketOHLC']['ohlc']:
-                row = {
-                    'feed_name': feed_name,  # Assuming feed name format is consistent
-                    'interval': interval_data['interval'],
-                    'Open': interval_data['open'],
-                    'High': interval_data['high'],
-                    'Low': interval_data['low'],
-                    'Close': interval_data['close'],
-                    'Volume': interval_data.get('volume', 0),  # Assuming volume might not be present
-                    'ts': interval_data.get('ts')
-                }
-                rows.append(row)
-    return pd.DataFrame(rows)
-
 
 async def push_data_to_db(data_queue: asyncio.Queue, success_event: asyncio.Event, threshold: int=10, url: str=INFLUX_DB_URL, 
                           org: str=INFLUX_DB_ORG, bucket: str=INFLUX_BUCKET_NAME, token: str=INFLUX_DB_TOKEN) -> None:
@@ -193,13 +151,13 @@ async def push_data_to_db(data_queue: asyncio.Queue, success_event: asyncio.Even
                 data_to_process.append(await data_queue.get())
             logger.debug("Data to process list gathered")
 
-            df = data_push.transform_data(data_to_process)  # Assuming data_to_process format
+            df = transform_data(data_to_process)  # Assuming data_to_process format
 
-            query = data_push.create_influx_query(df)
+            query = create_influx_query(df)
 
             # Mock send data logic
             try:
-                await data_push.push_data_to_influxdb(
+                await push_data_to_influxdb(
                     influx_query=query,
                     influxdb_url=url,
                     org=org,

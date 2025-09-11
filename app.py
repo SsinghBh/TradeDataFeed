@@ -31,10 +31,10 @@ logger.addHandler(stream_handler)
 
 async def main():
     # Import async coroutines
-    from src.websocket_client import fetch_market_data
-    from src.db_ingestion import push_data_to_db, setup_database
-    from src.backed_up_data import push_failed_data
-    from src.data_transfer_intimation import monitor_data_transfer
+    # from src.websocket_client import fetch_market_data
+    from v3 import fetch_market_data
+    from db import push_data_to_db, setup_database, push_failed_data
+    # from utils import monitor_data_transfer
 
     # Ensure the sqlite db directory exists
     if not os.path.exists('sqlite_db'):
@@ -53,14 +53,20 @@ async def main():
     tasks = [
         asyncio.create_task(fetch_market_data(q=q)),
         asyncio.create_task(push_data_to_db(data_queue=q, success_event=success_event)),
-        asyncio.create_task(push_failed_data(success_event=success_event))
+        # asyncio.create_task(push_failed_data(success_event=success_event))
     ]
 
     # Conditionally add the monitor_data_transfer task to send data update notification
-    if DATA_FEED_UPDATE_URL:
-        tasks.append(asyncio.create_task(monitor_data_transfer(success_event=success_event)))
+    # if DATA_FEED_UPDATE_URL:
+    #     tasks.append(asyncio.create_task(monitor_data_transfer(success_event=success_event)))
 
     await asyncio.gather(*tasks)
 
 if __name__ == "__main__":
     asyncio.run(main())
+else:
+    # This allows uvicorn to call the main function
+    import sys
+    if 'uvicorn' in sys.modules:
+        loop = asyncio.get_event_loop()
+        loop.create_task(main())

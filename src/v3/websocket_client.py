@@ -2,15 +2,21 @@
 import asyncio
 import json
 import ssl
-import upstox_client
 import websockets
-from google.protobuf.json_format import MessageToDict
-import MarketDataFeed_pb2 as pb
-import json
-import os
-from utils.access_token_util import fetch_token
 import requests
+import os
+from google.protobuf.json_format import MessageToDict
+
+from . import MarketDataFeedV3_pb2 as pb
+from .data_models.market_info import MarketInfoEvent
+from .data_models.live_feed import LiveFeed
+from utils import fetch_token
 import logging
+
+
+class InvalidTokenError(Exception):
+    """Raised when the API indicates the access token is invalid or expired."""
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -18,14 +24,48 @@ MAX_WEBSOCKET_CONN_RETRIES = 3
 FETCH_TOKEN_API = os.getenv("API_FETCH_TOKEN", None)
 ACCESS_TOKEN = os.getenv("ACCESS_TOKEN", None)
 GET_INSTRUMENTS_URL = os.getenv("GET_INSTRUMENTS_URL", None)
-INSTRUMENTS_LIST = [i.strip() for i in os.getenv("INSTRUMENTS_LIST", "").split(",")]
 
-def get_market_data_feed_authorize(api_version, configuration):
-    """Get authorization for market data feed."""
-    api_instance = upstox_client.WebsocketApi(
-        upstox_client.ApiClient(configuration))
-    api_response = api_instance.get_market_data_feed_authorize(api_version)
-    return api_response
+raw = os.getenv("INSTRUMENTS_LIST", "")
+tokens = [i.strip() for i in raw.split(",") if i.strip()]
+INSTRUMENTS_LIST = tokens if tokens else None
+
+def get_market_data_feed_authorize_v3(access_token):
+    """Get authorization for market data feed.
+
+    Raises
+    ------
+    InvalidTokenError
+        If the API responds with status "error" and error_code "UDAPI100050".
+    """
+    headers = {
+        'Accept': 'application/json',
+        'Authorization': f'Bearer {access_token}'
+    }
+    url = 'https://api.upstox.com/v3/feed/market-data-feed/authorize'
+    api_response = requests.get(url=url, headers=headers)
+
+    # Parse and handle potential error response structure
+    try:
+        payload = api_response.json()
+    except ValueError:
+        # If not JSON, raise with HTTP status context
+        api_response.raise_for_status()
+        # If no exception raised by raise_for_status, rethrow a generic error
+        raise Exception("Unexpected non-JSON response from authorize endpoint.")
+
+    # Handle error structure: {"status": "error", "errors": [{"error_code": "...", "message": "..."}]}
+    if isinstance(payload, dict) and payload.get("status") == "error":
+        errors = payload.get("errors") or []
+        for err in errors:
+            if isinstance(err, dict) and err.get("error_code") == "UDAPI100050":
+                message = err.get("message") or "Invalid or expired access token."
+                raise InvalidTokenError(message)
+        # For other errors, raise a generic exception including first error message if present
+        if errors:
+            raise Exception(errors[0].get("message") if isinstance(errors[0], dict) else "Authorization failed with error status.")
+        raise Exception("Authorization failed with error status.")
+
+    return payload
 
 
 def decode_protobuf(buffer):
@@ -94,15 +134,11 @@ async def fetch_market_data(q: asyncio.Queue):
     - It operates within an infinite loop and is designed to run as a long-lived task within an 
       asyncio event loop.
     """
+
     # Create default SSL context
     ssl_context = ssl.create_default_context()
     ssl_context.check_hostname = False
     ssl_context.verify_mode = ssl.CERT_NONE
-
-    # Configure OAuth2 access token for authorization
-    configuration = upstox_client.Configuration()
-
-    api_version = '2.0'
 
     retrying_period_access_token = 1
 
@@ -110,21 +146,21 @@ async def fetch_market_data(q: asyncio.Queue):
         try:
             # Access token
             if ACCESS_TOKEN is not None:
-                configuration.access_token = ACCESS_TOKEN
+                access_token = ACCESS_TOKEN
             elif FETCH_TOKEN_API is not None:
-                configuration.access_token = await fetch_token(url=FETCH_TOKEN_API)
+                access_token = await fetch_token(url=FETCH_TOKEN_API)
             else:
                 raise Exception(f"Neither access token nor url to fetch is provided. Terminating...")
 
             # Get market data feed authorization
-            response = get_market_data_feed_authorize(
-                api_version, configuration)
-
-            retry_no = 1  # 
+            response = get_market_data_feed_authorize_v3(access_token=access_token)
+            
+            
+            retry_no = 1
+            # Connect to the WebSocket with SSL context
             while retry_no <= MAX_WEBSOCKET_CONN_RETRIES:
                 try:
-                    # Connect to the WebSocket with SSL context
-                    async with websockets.connect(response.data.authorized_redirect_uri, ssl=ssl_context) as websocket:
+                    async with websockets.connect(response["data"]["authorized_redirect_uri"], ssl=ssl_context) as websocket:
                         print('Connection established')
 
                         await asyncio.sleep(1)  # Wait for 1 second
@@ -144,6 +180,11 @@ async def fetch_market_data(q: asyncio.Queue):
                         await websocket.send(binary_data)
 
                         # Continuously receive and decode data from WebSocket
+                        message = await websocket.recv()  # Recieve market info
+                        market_info = MessageToDict(decode_protobuf(message))
+                        MarketInfoEvent(**market_info)
+                        print(market_info)
+                        await websocket.recv()  # Recieve market snapshot
                         while True:
                             message = await websocket.recv()
                             decoded_data = decode_protobuf(message)
@@ -151,12 +192,14 @@ async def fetch_market_data(q: asyncio.Queue):
                             # Convert the decoded data to a dictionary
                             data_dict = MessageToDict(decoded_data)
 
+                            live_data = LiveFeed(**data_dict)
+
                             # Put data in q
-                            await q.put(data_dict)
+                            await q.put(live_data)
+                            # print(live_data.model_dump_json(), "\n\n")
 
                             # Print the dictionary representation
                             print("Data received from websocket.")
-                
                 except (
                     websockets.exceptions.ConnectionClosed,
                     websockets.exceptions.InvalidHandshake,
@@ -167,17 +210,17 @@ async def fetch_market_data(q: asyncio.Queue):
                     await asyncio.sleep(2)  # Wait for a sec
 
                     retry_no += 1  # Increment by 1
-
             print(f"Max retries exceeded for establishing websocket connection :: Will retry with updated token.")
-        except upstox_client.rest.ApiException as e:
+
+        except InvalidTokenError as e:
             print(f"Could not get market data feed authorization :: Error occured : {str(e)} :: Retrying with updating token after {retrying_period_access_token} seconds")
             await asyncio.sleep(retrying_period_access_token)
 
             retrying_period_access_token = min(100, retrying_period_access_token * 2)
-
-
-if __name__=="__main__":
-    q = asyncio.Queue()
-
+        except Exception as e:
+            logger.error(f"Unknown exception occured. Raising error and terminating... {str(e)}")
+            raise e
+        
+if __name__ == "__main__":
     # Execute the function to fetch market data
-    asyncio.run(fetch_market_data(q))
+    asyncio.run(fetch_market_data())
