@@ -1,26 +1,26 @@
 services:
-  # data-feed-service:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   volumes:
-  #     - ./:/app
-  #   command: uvicorn app:main --host 0.0.0.0 --port 8000 --reload
-  #   ports:
-  #     - 8000:8000  # Example port mapping, adjust as needed
-  #   environment:
-  #     - INFLUX_DB_URL=http://influxdb_dev:8086
-  #     - INFLUX_DB_ORG=my_org
-  #     - INFLUX_BUCKET_NAME=my_defualt_bucket
-  #     - INFLUX_DB_TOKEN=my_token
-  #     - DATA_FEED_UPDATE_URL=http://data_feed_mock:5005
-  #     - MAX_QUEUE_SIZE=10000
-  #     - INSTRUMENTS_LIST=NSE_EQ|INE531E01026 , NSE_EQ|INE047A01021, NSE_EQ|INE844O01030
-  #     - NOTIFICATION_SLEEP_TIME=60
-  #     - NOTIFICATION_WAIT_TIME=50
-  #   depends_on:
-  #     - influxdb_dev
-  #     - data_feed_mock
+  data-feed-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/app
+    command: uvicorn app:main --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - 8000:8000  # Example port mapping, adjust as needed
+    environment:
+      - INFLUX_DB_URL=http://influxdb_dev:8086
+      - INFLUX_DB_ORG=my_org
+      - INFLUX_BUCKET_NAME=my_defualt_bucket
+      - INFLUX_DB_TOKEN=my_token
+      - DATA_FEED_UPDATE_URL=http://data_feed_mock:5005/message
+      - MAX_QUEUE_SIZE=10000
+      - INSTRUMENTS_LIST=NSE_EQ|INE531E01026 , NSE_EQ|INE047A01021, NSE_EQ|INE844O01030
+      - NOTIFICATION_SLEEP_TIME=60
+      - NOTIFICATION_WAIT_TIME=50
+    depends_on:
+      - influxdb_dev
+      - data_feed_mock
 
   data_feed_mock:
     build: 

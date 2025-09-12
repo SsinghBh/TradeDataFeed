@@ -5,6 +5,8 @@ import ssl
 import websockets
 import requests
 import os
+from datetime import datetime
+import socket
 from google.protobuf.json_format import MessageToDict
 
 from . import MarketDataFeedV3_pb2 as pb
@@ -157,6 +159,7 @@ async def fetch_market_data(q: asyncio.Queue):
             
             
             retry_no = 1
+            count = 0
             # Connect to the WebSocket with SSL context
             while retry_no <= MAX_WEBSOCKET_CONN_RETRIES:
                 try:
@@ -183,7 +186,7 @@ async def fetch_market_data(q: asyncio.Queue):
                         message = await websocket.recv()  # Recieve market info
                         market_info = MessageToDict(decode_protobuf(message))
                         MarketInfoEvent(**market_info)
-                        print(market_info)
+                        print("Market data : \n", market_info)
                         await websocket.recv()  # Recieve market snapshot
                         while True:
                             message = await websocket.recv()
@@ -192,18 +195,26 @@ async def fetch_market_data(q: asyncio.Queue):
                             # Convert the decoded data to a dictionary
                             data_dict = MessageToDict(decoded_data)
 
+                            # print("data dict : ", data_dict, "\n\n")
+
+                            start_time = datetime.now()
                             live_data = LiveFeed(**data_dict)
+                            end_time = datetime.now()
+                            print(f"Time taken to parse data using pydantic : {(end_time - start_time).total_seconds()*1000} ms")
 
                             # Put data in q
                             await q.put(live_data)
                             # print(live_data.model_dump_json(), "\n\n")
 
                             # Print the dictionary representation
-                            print("Data received from websocket.")
+                            count += 1
+                            print("Data received from websocket.", count)
                 except (
                     websockets.exceptions.ConnectionClosed,
                     websockets.exceptions.InvalidHandshake,
-                    asyncio.TimeoutError
+                    asyncio.TimeoutError,
+                    socket.gaierror,     # DNS resolution failed
+                    OSError              # Covers WinError 121 and other low-level I/O issues
                 ) as e:
                     
                     print(f"WebSocket connection closed unexpectedly or failed to connect: {e} :: Will try to re-establish connection :: retry no : {retry_no}")
@@ -211,6 +222,14 @@ async def fetch_market_data(q: asyncio.Queue):
 
                     retry_no += 1  # Increment by 1
             print(f"Max retries exceeded for establishing websocket connection :: Will retry with updated token.")
+
+        except (
+            ConnectionError, 
+            requests.exceptions.RequestException
+        ) as e:
+            logger.warning(f"Network/Authorization call failed: {e}. Retrying in 10s...")
+            await asyncio.sleep(10)
+            continue
 
         except InvalidTokenError as e:
             print(f"Could not get market data feed authorization :: Error occured : {str(e)} :: Retrying with updating token after {retrying_period_access_token} seconds")

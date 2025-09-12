@@ -39,13 +39,13 @@ class OptionGreeks(BaseModel):
 class OHLCEntry(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
-    interval: str
-    open: float
-    high: float
-    low: float
-    close: float
-    vol: str
-    ts: str
+    interval: str = None
+    open: float = None
+    high: float = None
+    low: float = None
+    close: float = None
+    vol: str = None
+    ts: str = None
 
 
 class MarketOHLC(BaseModel):
@@ -92,7 +92,7 @@ class LiveFeed(BaseModel):
 
 
 if __name__ == "__main__":
-    data = {"type":"live_feed","feeds":{"NSE_EQ|INE047A01021":{"fullFeed":{"marketFF":{"ltpc":{"ltp":2787.5,"ltt":"1757580454460","ltq":"10","cp":2785.8},"marketLevel":{"bidAskQuote":[{"bidQ":"45","bidP":2787.5,"askQ":"1","askP":2787.9},{"bidQ":"6","bidP":2787.3,"askQ":"24","askP":2788.4},{"bidQ":"44","bidP":2787.2,"askQ":"29","askP":2788.6},{"bidQ":"60","bidP":2787.1,"askQ":"5","askP":2788.7},{"bidQ":"21","bidP":2787.0,"askQ":"14","askP":2788.8}]},"optionGreeks":{},"marketOHLC":{"ohlc":[{"interval":"1d","open":2782.4,"high":2795.0,"low":2771.0,"close":2787.5,"vol":"118836","ts":"1757529000000"},{"interval":"I1","open":2786.5,"high":2789.5,"low":2786.5,"close":2789.0,"vol":"5848","ts":"1757580360000"}]},"atp":2784.62,"vtt":"118836","tbq":64839.0,"tsq":55703.0}},"marketFF":None,"ltpc":None,"marketLevel":None,"optionGreeks":None,"marketOHLC":None,"atp":None,"vtt":None,"oi":None,"tbq":None,"tsq":None,"currentTs":None}}}
+    data = {'type': 'live_feed', 'feeds': {'NSE_EQ|INE531E01026': {'fullFeed': {'marketFF': {'ltpc': {'ltp': 248.5, 'ltt': '1757586501000', 'ltq': '16', 'cp': 248.58}, 'marketLevel': {'bidAskQuote': [{'bidQ': '63', 'bidP': 298.29, 'askQ': '200', 'askP': 240.3}, {'bidQ': '3000', 'bidP': 280.0, 'askQ': '201', 'askP': 243.61}, {'bidQ': '400', 'bidP': 265.0, 'askQ': '61', 'askP': 246.55}, {'bidQ': '43', 'bidP': 261.01, 'askQ': '61', 'askP': 247.1}, {'bidQ': '8014', 'askQ': '761'}]}, 'optionGreeks': {}, 'marketOHLC': {'ohlc': [{'interval': '1d', 'open': 251.0, 'high': 248.5, 'low': 248.5, 'close': 248.5, 'vol': '24147', 'ts': '1757615400000'}, {}]}, 'vtt': '24147', 'tbq': 153562.0, 'tsq': 357356.0}}, 'requestMode': 'full_d5'}}, 'currentTs': '1757648211290'}
 
     with open("rough.json", "w") as f:
         import json
@@ -101,7 +101,7 @@ if __name__ == "__main__":
 
     data_list = [LiveFeed(**data)]
 
-    print(LiveFeed(**data).feeds['NSE_EQ|INE047A01021'])
+    print(LiveFeed(**data).feeds['NSE_EQ|INE531E01026'])
     for data in data_list:
         for feed_name, feed_data in data.feeds.items():
             for interval_feed in feed_data.fullFeed.marketFF.marketOHLC.ohlc:

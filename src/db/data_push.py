@@ -99,7 +99,7 @@ def transform_data(data_list: List[LiveFeed]) -> pd.DataFrame:
                     'High': interval_feed.high,
                     'Low': interval_feed.low,
                     'Close': interval_feed.close,
-                    'Volume': getattr(interval_feed, 'volume', 0),  # Assuming volume might not be present
+                    'Volume': interval_feed.vol,
                     'ts': interval_feed.ts
                 }
                 rows.append(row)
