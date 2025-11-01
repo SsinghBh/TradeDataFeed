@@ -4,9 +4,12 @@ import aiohttp
 import os
 
 from v3.data_models.live_feed import LiveFeed
-from typing import List
+from src.utils.utils import get_instruments_data
 
 REPLACE_INSTRUMENT_KEY_WITH_TRADE_SYMBOL = os.getenv("REPLACE_INSTRUMENT_KEY_WITH_TRADE_SYMBOL", "False").lower() == "true"
+UPSTOX_INSTRUMENTS_DF = get_instruments_data()
+INSTRUMENT_KEY_TO_TRADE_SYMBOL = dict(zip(UPSTOX_INSTRUMENTS_DF['instrument_key'], UPSTOX_INSTRUMENTS_DF['trading_symbol']))
+
 
 def create_influx_query(df: pd.DataFrame) -> str:
     """
@@ -55,7 +58,7 @@ def create_influx_query(df: pd.DataFrame) -> str:
 
     for _, row in df.iterrows():
         measurement = row['interval']
-        tags = f"feed_name={row['feed_name']}"
+        tags = f"feed_name={row['feed_name']},trade_symbol={row['trade_symbol']}"
         
         fields = ",".join(
             f"{key}={value}"
@@ -75,25 +78,13 @@ def transform_data(data_list: List[LiveFeed]) -> pd.DataFrame:
     Transforms the given data into a pandas DataFrame.
     """
     rows = []
-    # for data in data_list:
-    #     for feed_name, feed_data in data['feeds'].items():
-    #         for interval_data in feed_data['ff']['marketFF']['marketOHLC']['ohlc']:
-    #             row = {
-    #                 'feed_name': feed_name,  # Assuming feed name format is consistent
-    #                 'interval': interval_data['interval'],
-    #                 'Open': interval_data.get('open', None),
-    #                 'High': interval_data.get('high', None),
-    #                 'Low': interval_data.get('low', None),
-    #                 'Close': interval_data.get('close', None),
-    #                 'Volume': interval_data.get('volume', 0),  # Assuming volume might not be present
-    #                 'ts': interval_data.get('ts')
-    #             }
-    #             rows.append(row)
+
     for data in data_list:
         for feed_name, feed_data in data.feeds.items():
             for interval_feed in feed_data.fullFeed.marketFF.marketOHLC.ohlc:
                 row = {
-                    'feed_name': feed_name,# if not REPLACE_INSTRUMENT_KEY_WITH_TRADE_SYMBOL else feed_data.fullFeed.get('trade_symbol', feed_name),
+                    'feed_name': feed_name,
+                    'trade_symbol': INSTRUMENT_KEY_TO_TRADE_SYMBOL.get(feed_name, feed_name),
                     'interval': interval_feed.interval,
                     'Open': interval_feed.open,
                     'High': interval_feed.high,

@@ -1,6 +1,13 @@
 from datetime import datetime
 import pandas as pd
 import aiohttp
+import requests
+import gzip
+import json
+from io import BytesIO
+
+UPSTOX_INSTRUMENTS_URL = "https://assets.upstox.com/market-quote/instruments/exchange/complete.json.gz"
+
 
 def convert_datetime_to_influxdb_string(dt) -> str:
     """
@@ -37,3 +44,14 @@ async def is_influxdb_online(url: str) -> bool:
                     return False
         except aiohttp.ClientError:
             return False
+        
+def get_instruments_data() -> pd.DataFrame:
+    # Download the compressed file
+    response = requests.get(UPSTOX_INSTRUMENTS_URL)
+    response.raise_for_status()
+
+    # Decompress
+    with gzip.GzipFile(fileobj=BytesIO(response.content)) as gz:
+        data = json.load(gz)
+        
+    return pd.DataFrame(data)
