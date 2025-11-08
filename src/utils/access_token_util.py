@@ -37,20 +37,21 @@ async def fetch_token(url: str) -> str:
                         
                         return access_token
                     else:
-                        print(f"Failed to fetch access token. Status: {response.status} :: Will retry after 2 seconds")
+                        data = await response.json()
+                        error = data.get("error")
+                        print(f"Failed to fetch access token. Status: {response.status}, error occured : {error} :: Will retry after 2 seconds")
                     
         except ClientConnectorError as e:
             print(f"Connection error occurred: {e} :: Will retry after 2 seconds")
-            await asyncio.sleep(2)
 
         except KeyError as e:
             print(f"KeyError: {e} not found in the response data :: Will retry after 2 seconds")
-            await asyncio.sleep(2)
 
         except ValueError as e:
             print(f"ValueError: {e} :: Will retry after 2 seconds")
-            await asyncio.sleep(2)
 
         except Exception as e:
             print(f"An unexpected error occurred: {e} :: Aborting token fetching")
             raise
+
+        await asyncio.sleep(2)
