@@ -64,9 +64,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-else:
-    # This allows uvicorn to call the main function
-    import sys
-    if 'uvicorn' in sys.modules:
-        loop = asyncio.get_event_loop()
-        loop.create_task(main())
