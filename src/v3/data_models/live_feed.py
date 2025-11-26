@@ -44,7 +44,7 @@ class OHLCEntry(BaseModel):
     high: float = None
     low: float = None
     close: float = None
-    vol: str = None
+    vol: str = 0
     ts: str = None
 
 

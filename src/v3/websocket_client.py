@@ -207,8 +207,7 @@ async def fetch_market_data(q: asyncio.Queue):
                             # print(live_data.model_dump_json(), "\n\n")
 
                             # Print the dictionary representation
-                            count += 1
-                            print("Data received from websocket.", count)
+                            logger.debug("Data received from websocket.")
                 except (
                     websockets.exceptions.ConnectionClosed,
                     websockets.exceptions.InvalidHandshake,

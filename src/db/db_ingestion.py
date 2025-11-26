@@ -78,8 +78,15 @@ async def save_to_db(data: str, db_path: str = DB_LOCATION, max_docs_limit: int 
         logger.debug(f"Successfully saved data to {db_path}. Current row count: {existing_docs_count + 1}.")
         return None
 
-async def push_data_to_db(data_queue: asyncio.Queue, success_event: asyncio.Event, threshold: int=10, url: str=INFLUX_DB_URL, 
-                          org: str=INFLUX_DB_ORG, bucket: str=INFLUX_BUCKET_NAME, token: str=INFLUX_DB_TOKEN) -> None:
+async def push_data_to_db(
+        data_queue: asyncio.Queue, 
+        success_event: asyncio.Event, 
+        threshold: int=10, 
+        url: str=INFLUX_DB_URL, 
+        org: str=INFLUX_DB_ORG, 
+        bucket: str=INFLUX_BUCKET_NAME, 
+        token: str=INFLUX_DB_TOKEN
+) -> None:
     """
     Processes data from the queue and attempts to push it to InfluxDB. If pushing to InfluxDB fails, 
     the data is saved locally for later processing.
